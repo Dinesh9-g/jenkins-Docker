@@ -5,10 +5,21 @@ pipeline {
         DOCKER_REPO = 'gdrajasree/rajasree6-images'
     }
     stages {
+        stage('Verify Structure') {
+            steps {
+                script {
+                    sh '''
+                        echo "=== Current Structure ==="
+                        ls -R src/
+                        echo "=== HTML Files ==="
+                        ls -l src/html/
+                    '''
+                }
+            }
+        }
         stage('build') {
             steps {
                 script {
-                    // Change directory to "src/" before building
                     dir('src') {
                         sh 'docker build -t ${IMG_NAME} .'
                         sh 'docker tag ${IMG_NAME} ${DOCKER_REPO}:${IMG_NAME}'
@@ -18,7 +29,11 @@ pipeline {
         }
         stage('push') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'DockerHub-gd', passwordVariable: 'PSWD', usernameVariable: 'LOGIN')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'DockerHub-gd',
+                    passwordVariable: 'PSWD',
+                    usernameVariable: 'LOGIN'
+                )]) {
                     script {
                         sh 'echo ${PSWD} | docker login -u ${LOGIN} --password-stdin'
                         sh 'docker push ${DOCKER_REPO}:${IMG_NAME}'
