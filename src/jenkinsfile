@@ -1,45 +1,38 @@
 pipeline {
     agent any
     environment {
-        IMG_NAME = 'my-gd'
+        IMG_NAME = 'my-app'  // Changed from 'my-gd' for better practice
         DOCKER_REPO = 'gdrajasree/rajasree6-images'
     }
     stages {
-        stage('Verify Structure') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    sh '''
-                        echo "=== Current Structure ==="
-                        ls -R src/
-                        echo "=== HTML Files ==="
-                        ls -l src/html/
-                    '''
+                dir('src') {
+                    sh 'docker build --pull --no-cache -t ${IMG_NAME} .'
                 }
             }
         }
-        stage('build') {
-            steps {
-                script {
-                    dir('src') {
-                        sh 'docker build -t ${IMG_NAME} .'
-                        sh 'docker tag ${IMG_NAME} ${DOCKER_REPO}:${IMG_NAME}'
-                    }
-                }
-            }
-        }
-        stage('push') {
+        stage('Push to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'DockerHub-gd',
-                    passwordVariable: 'PSWD',
-                    usernameVariable: 'LOGIN'
+                    passwordVariable: 'DOCKER_PASSWORD',
+                    usernameVariable: 'DOCKER_USERNAME'
                 )]) {
                     script {
-                        sh 'echo ${PSWD} | docker login -u ${LOGIN} --password-stdin'
-                        sh 'docker push ${DOCKER_REPO}:${IMG_NAME}'
+                        sh '''
+                            docker tag ${IMG_NAME} ${DOCKER_REPO}:${IMG_NAME}
+                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                            docker push ${DOCKER_REPO}:${IMG_NAME}
+                        '''
                     }
                 }
             }
+        }
+    }
+    post {
+        always {
+            cleanWs()  // Clean workspace after build
         }
     }
 }
