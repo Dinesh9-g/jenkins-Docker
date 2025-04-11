@@ -8,8 +8,11 @@ pipeline {
         stage('build') {
             steps {
                 script {
+                    // Change directory to "src/" before building
+                    dir('src') {
                         sh 'docker build -t ${IMG_NAME} .'
                         sh 'docker tag ${IMG_NAME} ${DOCKER_REPO}:${IMG_NAME}'
+                    }
                 }
             }
         }
